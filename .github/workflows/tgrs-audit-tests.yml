@@ -1,0 +1,21 @@
+name: TGRS audit helper tests
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - tgrs-reliability-reproducibility-20261124
+permissions:
+  contents: read
+jobs:
+  audit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run dependency-free unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Check audit script parses
+        run: python -m py_compile tools/audit_instability.py
