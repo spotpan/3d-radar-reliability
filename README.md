@@ -1,45 +1,95 @@
-# Beyond Average Accuracy: The Reliability Landscape of 3D Radar Precipitation Retrieval
+# 3D Radar Reliability
 
-Research code and reproducibility notes for the TGRS manuscript. This repository originally hosted the 3DMAEPP / randomized-smoothing project. Its earlier overview is preserved in [docs/LEGACY_README.md](docs/LEGACY_README.md).
+**Beyond Average Accuracy: The Reliability Landscape of 3D Radar Precipitation Retrieval**  
+Research artifacts and code for a manuscript prepared for *IEEE Transactions on Geoscience and Remote Sensing (TGRS)*.
 
-**Release scope (24 November 2026): partial code and audit utilities, NOT a complete reproduction of every manuscript table or figure.** No manuscript result should be considered independently reproduced by this repository without the corresponding checkpoint, restricted data, exact split, and a verified run log.
+This repository studies reliability **beyond aggregate quantitative precipitation estimation (QPE) accuracy** from complementary perspectives:
 
-## Three distinct experimental protocols
+1. **Representation accessibility:** can heavy- and extreme-rain evidence be recovered from frozen 3D radar representations using limited labels?
+2. **Structural sensitivity:** how stable are event decisions when radar intensity, vertical levels, temporal frames, or local echoes are perturbed?
+3. **Terrain-associated radar–rainfall mismatch:** how does observational disagreement accompanying prediction errors vary across topography?
 
-| Manuscript evidence | Experiment | Present public coverage |
+These are **separate experiments**, not three measurements from one common trained model. Their backbones, splits, event definitions, and analysis units must not be conflated.
+
+> **Release status (November 2026): partial research code.** The publicly available repository currently includes the 3DMAEPP base-model code, original structural-perturbation scripts, and lightweight diagnostic audit utilities. It does **not yet** provide fully validated, end-to-end reproduction of every reported table and figure. A separate PatchShot code package has been identified but is **not yet integrated into this repository**. No missing implementation or data is represented as publicly available.
+
+## Paper-to-code map
+
+| Evidence in manuscript | Evaluation setting | Public repository status |
 | --- | --- | --- |
-| Tables I–II; Figure 4 | Frozen 3DMAE rare-event readouts, support/query evaluation, empirical probe envelope | Not yet a verified runnable PatchShot/CE/PaCo reproduction |
-| Table III; Figure 2 original columns | Original frozen 3DMAEPP, low-threshold event decisions, structured perturbations | Existing perturbation scripts; checkpoint and restricted data required, numerical match not yet verified |
-| Table IV; Figure 2 H5/H10 | Separate frozen M3_natural predictor, 2023 event split | Full event-specific implementation, split and exports not yet published here |
-| Figures 3, 5, 6 | Unperturbed PatchShot decisions, radar / precipitation / DEM conditional mismatch | Full terrain analysis and input provenance not yet published here |
+| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **Pending integration** of verified PatchShot/related code, exact splits, per-seed records and calibration |
+| **Table III; original analyses in Figure 2** | Frozen 3DMAEPP with lower-threshold QPE-derived patch-event decisions | **Code available:** existing perturbation evaluation scripts; full numeric reproduction still needs authorized data, checkpoint and audit |
+| **Table IV; H5/H10 analyses in Figure 2** | Separate frozen M3_natural experiment and 2023 event split | **Pending integration:** dedicated high-intensity evaluation protocol, model outputs and test-split manifests |
+| **Figures 3, 5–6** | Unperturbed PatchShot decisions with aligned radar, precipitation reference and DEM | **Pending integration:** full spatial/terrain mismatch and calendar-day bootstrap pipeline |
 
-The experiments differ in predictor, event definition, data split, and evaluation unit. Do not merge their numbers into one leaderboard or infer that layer rankings transfer between protocols. H5/H10 are rainfall thresholds (5/10 mm/h); L0–L5 are radar height levels.
+**Notation:** H5 and H10 mean rainfall-event thresholds of 5 and 10 mm/h; L0–L5 are radar vertical-level indices. Original Table III and separate Table IV sensitivity rankings are *not* directly comparable across their different protocols.
 
-## Existing implementation
+## Repository layout
 
-- models/, training/, configs/, data/: baseline 3DMAEPP architecture, training and data-loading components.
-- evaluation/compare_physical_rs_uncertainty.py: six structured perturbation families underlying the original low-threshold diagnosis.
-- evaluation/compare_height_layer_rs_uncertainty.py: targeted group and single-level perturbation evaluation.
-- evaluation/evaluate.py and run_evaluation.py: earlier generic QPE evaluation facilities. The latter contains explicit NotImplementedError placeholders: **it is not an entrypoint for Tables I–II of this manuscript**.
+```text
+3d-radar-reliability/
+├── configs/                       # Original model and dataset configurations
+├── data/                          # Data loaders (restricted data are not included)
+├── models/                        # 3DMAE encoder and QPE components
+├── training/                      # Base-model training components
+├── evaluation/                    # Existing QPE and structural diagnostics
+├── scripts/                       # Existing training utilities
+├── tools/audit_instability.py     # Post-inference vote/instability consistency audit
+├── tests/                         # Unit tests for audit utilities
+├── docs/                          # Protocol boundaries and release checklist
+├── requirements.txt
+└── README.md
+```
 
-With *authorized* local data and a compatible trained checkpoint, the original structural scripts can be invoked as follows (example paths, not turnkey reproductions):
+The earlier project description is preserved in [docs/LEGACY_README.md](docs/LEGACY_README.md). Older generic QPE evaluation examples are documented separately in [evaluation/README.md](evaluation/README.md); they must not be treated as the current TGRS Tables I–II.
 
-    python evaluation/compare_physical_rs_uncertainty.py --checkpoint /local/3dmaepp.pt --num-samples 16 --max-batches 50 --seed 2026 --out-csv /local/table_iii_families.csv
-    python evaluation/compare_height_layer_rs_uncertainty.py --checkpoint /local/3dmaepp.pt --num-samples 16 --max-batches 50 --drop-prob 0.5 --seed 2026 --out-csv /local/table_iii_layers.csv
+## Getting started
 
-Important: the targeted-height script previously defaulted to **8** perturbation draws and **20** batches, so the manuscript's 16/50 settings must be specified explicitly. In that script, the selected layer *group is gated jointly* by a single random dropout decision per realization (not independently per layer). A validated checkpoint/loader, exact split, and output comparison are still required before claiming Table III reproduction.
+```bash
+git clone https://github.com/spotpan/3d-radar-reliability.git
+cd 3d-radar-reliability
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+```
 
-## Independent metrics audit (no model inference)
+### Original structural-sensitivity scripts (Table III pathway)
 
-The new helper computes observed event-vote F1 and instability from actual per-draw event-score exports:
+The following commands are **illustrative invocations** that require a compatible trained 3DMAEPP checkpoint, the original validation data, and valid local loader configuration. Running them on an arbitrary checkpoint or split does not reproduce Table III.
 
-    python tools/audit_instability.py --input /local/per_draw_scores.csv --prediction-threshold 0.0005 --expected-draws 16 --output /local/instability_summary.csv
-    python -m unittest discover -s tests -v
+```bash
+python evaluation/compare_physical_rs_uncertainty.py \
+  --checkpoint /authorized/path/to/3dmaepp.pt \
+  --num-samples 16 --max-batches 50 --batch-size 1 --seed 2026 \
+  --out-csv /local/results/table_iii_families.csv
 
-The example threshold 0.0005 applies to the *original Table III QPE-score* protocol only. The separate Table IV H5/H10 experiment must use its own frozen thresholds and event-score definition. This helper never invents experimental predictions or regenerates manuscript tables.
+python evaluation/compare_height_layer_rs_uncertainty.py \
+  --checkpoint /authorized/path/to/3dmaepp.pt \
+  --num-samples 16 --max-batches 50 --batch-size 1 --drop-prob 0.5 --seed 2026 \
+  --out-csv /local/results/table_iii_height_levels.csv
+```
 
-See [docs/PROTOCOLS.md](docs/PROTOCOLS.md), [docs/PER_DRAW_SCHEMA.md](docs/PER_DRAW_SCHEMA.md), and [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md).
+The height-layer utility's original **defaults** are eight draws and twenty batches, so the 16/50 flags are intentional. The present targeted-group implementation applies a **shared Bernoulli dropout gate** to the entire selected layer group in each draw; it does not sample each level independently. The original family-dropout probability is 0.15, distinct from targeted-group dropout at 0.5. Check all details against [docs/PROTOCOLS.md](docs/PROTOCOLS.md) before attempting manuscript-level comparisons.
 
-## Data and code availability
+### Auditing real per-draw exports
 
-Radar and station-derived precipitation observations, some checkpoints, and restricted derived artifacts are not redistributed. Access to inputs requires authorization from their data owners. The absence of these materials prevents turnkey numerical reproduction. The repository does not yet contain complete end-to-end reproduction paths for all three manuscript branches.
+```bash
+python tools/audit_instability.py \
+  --input /local/results/per_draw_scores.csv \
+  --output /local/results/audited_vote_statistics.csv \
+  --prediction-threshold 0.0005 --expected-draws 16
+```
+
+This utility computes patch-level F1 and mean decision instability `U = 4p(1-p)` from **actual model-produced draw scores**. The example 0.0005 threshold refers only to the original low-threshold Table III pathway. It does not apply to Table IV's independently calibrated H5/H10 protocol. The helper does not generate radar predictions or independently reproduce manuscript data; see [input schema](docs/PER_DRAW_SCHEMA.md).
+
+## Reproducibility and access
+
+- [Protocol-by-protocol evidence and limitations](docs/PROTOCOLS.md)
+- [Per-draw CSV requirements](docs/PER_DRAW_SCHEMA.md)
+- [Checklist before claiming complete reproduction](docs/RELEASE_CHECKLIST.md)
+- [Historical baseline repository description](docs/LEGACY_README.md)
+
+Radar and station-derived precipitation measurements, certain trained checkpoints and other restricted artifacts are not redistributed. Access requires authorization from their data owners. Manuscript results need verified experiment manifests, model versions, splits, calibration, input provenance and output comparisons; the presence of source code alone does not establish numerical reproduction.
+
+## Citation
+
+If referencing this work, cite the manuscript **“Beyond Average Accuracy: The Reliability Landscape of 3D Radar Precipitation Retrieval”** by Yu Bu, Xinchuang Hu, and Baoquan Zhang. Do not use a fabricated publication year, DOI or finalized journal citation before publication.
