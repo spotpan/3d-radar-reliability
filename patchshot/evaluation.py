@@ -7,6 +7,7 @@ from .data import flatten_cases
 from .metrics import metric_dict, separation_ratio
 from .model import project_numpy, train_supcon_projection
 from .readout import choose_threshold, prototype_scores
+from .matched_ce import train_matched_ce_projection
 
 @dataclass
 class EvaluationConfig:
@@ -44,6 +45,20 @@ def evaluate_one_split(z_case: np.ndarray, y_case: np.ndarray,
             seed=seed, epochs=config.epochs, steps_per_epoch=config.steps_per_epoch,
             batch_size=config.batch_size, learning_rate=config.learning_rate,
             temperature=config.temperature, device=config.device,
+        )
+        support_embedding = project_numpy(model, support_features, config.device)
+        query_embedding = project_numpy(model, query_features, config.device)
+    elif config.mode == "matched_ce":
+        model = train_matched_ce_projection(
+            support_features=support_features,
+            support_target=support_target,
+            seed=seed,
+            epochs=config.epochs,
+            steps_per_epoch=config.steps_per_epoch,
+            batch_size=config.batch_size,
+            learning_rate=config.learning_rate,
+            weight_decay=1e-4,
+            device=config.device,
         )
         support_embedding = project_numpy(model, support_features, config.device)
         query_embedding = project_numpy(model, query_features, config.device)

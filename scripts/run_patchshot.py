@@ -40,7 +40,7 @@ def main():
     p.add_argument("--npz", required=True, type=Path)
     p.add_argument("--out_dir", required=True, type=Path)
     p.add_argument("--feature_key", default="z_patch")
-    p.add_argument("--mode", choices=["frozen","pca","supcon"], default="supcon")
+    p.add_argument("--mode", choices=["frozen","pca","supcon","matched_ce"], default="supcon")
     p.add_argument("--labels", default="heavy_5,heavy_10")
     p.add_argument("--ratios", default="0.01,0.05,0.10,0.20,0.50")
     p.add_argument("--seeds", type=int, default=5)
