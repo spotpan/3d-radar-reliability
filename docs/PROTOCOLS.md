@@ -1,4 +1,4 @@
-# Protocol and script audit (TGRS draft, 2026-11-24)
+# Protocol and script audit (TGRS draft; updated 2026-11-25)
 
 This file maps manuscript evidence to the *present repository*; no publication-grade reproduction has been verified from a fresh clone with the actual restricted data.
 
@@ -6,8 +6,10 @@ This file maps manuscript evidence to the *present repository*; no publication-g
 
 - Frozen 3DMAE representation pathway; does NOT use the original full 3DMAEPP Temporal Transformer and QPE decoder as the PatchShot readout.
 - Radar-only Table I at 20% support: 384 support and 961 query cases per seed; five paired seeds; H5/H10 threshold-specific labels and support-only calibration.
-- Figure 4 uses nested support budgets; ERA5-conditioned comparisons have an additional alignment/development-data protocol. Do not treat them as radar-only budget-matched results.
-- Needed to release full code: exact case manifests, readout training, per-seed query predictions, Matched CE and PaCo controls, calibration, OOF envelope, plotting inputs.
+- The Stage-27 radar-only dataset has 1,922 cases, 961 query cases and support budgets 19, 96, 192, 384 and **961**. A separate ERA5-aligned Stage-112a subset uses 1,918 cases, 959 queries and 959 support cases at 50%; do not confuse the two.
+- Figure 4 radar-only Frozen/PatchShot five-budget summary and true seed-paired deltas can now be plotted from archived source records using scripts/plot_verified_figure4.py; other baseline methods have confirmed 20%-only data.
+- Already released: PatchShot and objective-matched CE readout algorithms, case-disjoint splits, support-only threshold calibration, recorded five-seed CSI references, a post-embedding OOF probe tool and source-covered Figure 4 plots.
+- Still missing for complete reproducibility: exact case manifests with temporal provenance, authorized pretrained features/checkpoints, actual query predictions, PaCo implementation, fully verified Table II adapted embeddings and OOF reference outputs, and additional Figure 4 protocols.
 - Legacy run_evaluation.py and evaluation/README.md are *generic QPE examples*, not evidence of reproduced manuscript Tables I/II.
 
 ## Original structural sensitivity: Table III

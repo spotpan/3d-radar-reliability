@@ -107,7 +107,7 @@ def make_plots(stats, deltas, out_dir: Path):
     ax.grid(axis="y",alpha=.2); ax.legend()
     fig.tight_layout();save(fig,"figure4_c_verified_radar_readouts")
 
-    mat=np.array([deltas[(label,b)] for label in LABELS for b in []]) if False else np.array(
+    mat=np.array(
         [[deltas[(label,b)][seed]*100 for b in BUDGETS]
          for label in LABELS for seed in range(5)])
     fig, ax = plt.subplots(figsize=(9.0,4.1))

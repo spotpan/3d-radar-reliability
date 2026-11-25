@@ -11,13 +11,13 @@ This repository studies reliability **beyond aggregate quantitative precipitatio
 
 These are **separate experiments**, not three measurements from one common trained model. Their backbones, splits, event definitions, and analysis units must not be conflated.
 
-> **Release status (November 2026): partial research code.** The publicly available repository currently includes the 3DMAEPP base-model code, original structural-perturbation scripts, and lightweight diagnostic audit utilities. It does **not yet** provide fully validated, end-to-end reproduction of every reported table and figure. The **radar-only PatchShot core** (frozen-feature loading, case-disjoint support/query splits, support-supervised projection, prototype calibration and a runnable CLI) has been integrated from the archived clean release. Matched CE, PaCo-Proto, Table II envelope, M3_natural and terrain analysis still lack verified complete public runners. No missing implementation or data is represented as publicly available.
+> **Release status (November 2026): partial research code.** The publicly available repository currently includes the 3DMAEPP base-model code, original structural-perturbation scripts, and lightweight diagnostic audit utilities. It does **not yet** provide fully validated, end-to-end reproduction of every reported table and figure. The **radar-only PatchShot core** (frozen-feature loading, case-disjoint support/query splits, support-supervised projection, prototype calibration and a runnable CLI) has been integrated from the archived clean release. The original objective-matched CE readout and a post-embedding OOF probe utility have also been added. PaCo-Proto, complete Table II numerical reproduction, M3_natural, and terrain analysis remain incomplete. No missing implementation or data is represented as publicly available.
 
 ## Paper-to-code map
 
 | Evidence in manuscript | Evaluation setting | Public repository status |
 | --- | --- | --- |
-| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **PatchShot core CLI integrated**, including frozen and PCA baselines; Matched CE objective-matched projector and original five-seed results integrated; PaCo, Table II probe envelope, original frozen-feature arrays and fresh numerical rerun remain pending |
+| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **Available:** PatchShot and Matched CE readout CLIs, 20%-support archived Table I reference rows, Figure 4 radar-only budget summaries, and case-grouped OOF probe code. **Not verified:** PaCo, complete Table II outputs, exact restricted feature inputs, full-budget methods other than Frozen/PatchShot, fresh full-scale reproduction |
 | **Table III; original analyses in Figure 2** | Frozen 3DMAEPP with lower-threshold QPE-derived patch-event decisions | **Code available:** existing perturbation evaluation scripts; full numeric reproduction still needs authorized data, checkpoint and audit |
 | **Table IV; H5/H10 analyses in Figure 2** | Separate frozen M3_natural experiment and 2023 event split | **Pending integration:** dedicated high-intensity evaluation protocol, model outputs and test-split manifests |
 | **Figures 3, 5–6** | Unperturbed PatchShot decisions with aligned radar, precipitation reference and DEM | **Pending integration:** full spatial/terrain mismatch and calendar-day bootstrap pipeline |
@@ -34,8 +34,8 @@ These are **separate experiments**, not three measurements from one common train
 ├── training/                      # Base-model training components
 ├── evaluation/                    # Existing QPE and structural diagnostics
 ├── patchshot/                     # Frozen-feature PatchShot and matched CE readouts
-├── scripts/run_patchshot.py       # Case-disjoint PatchShot benchmark CLI
-├── scripts/                       # Existing training utilities
+├── scripts/                       # PatchShot, OOF and plot CLIs; training utilities
+├── reference_results/             # Source-traced archived CSI summaries and seed deltas
 ├── tools/audit_instability.py     # Post-inference vote/instability consistency audit
 ├── tests/                         # Unit tests for audit utilities
 ├── docs/                          # Protocol boundaries and release checklist
@@ -43,7 +43,7 @@ These are **separate experiments**, not three measurements from one common train
 └── README.md
 ```
 
-See [docs/PATCHSHOT_PROTOCOL.md](docs/PATCHSHOT_PROTOCOL.md) for Stage-27 and [docs/MATCHED_CE_PROTOCOL.md](docs/MATCHED_CE_PROTOCOL.md) for the original objective-matched CE control and its archived five-seed results.
+See [docs/PATCHSHOT_PROTOCOL.md](docs/PATCHSHOT_PROTOCOL.md) for Stage-27, [docs/MATCHED_CE_PROTOCOL.md](docs/MATCHED_CE_PROTOCOL.md) for matched CE, and [docs/OOF_PROBES.md](docs/OOF_PROBES.md) for the separately calibrated probe workflow.
 
 The earlier project description is preserved in [docs/LEGACY_README.md](docs/LEGACY_README.md). Older generic QPE evaluation examples are documented separately in [evaluation/README.md](evaluation/README.md); they must not be treated as the current TGRS Tables I–II.
 
@@ -65,7 +65,7 @@ python scripts/run_patchshot.py \
   --labels heavy_5,heavy_10 --ratios 0.20 --seeds 5 --device cuda
 ```
 
-The CSV exports are **new computation results from the user's supplied frozen-feature arrays**. The arrays and original radar model checkpoints are restricted and are not included. This CLI implements the original case-disjoint, support-only calibration protocol, **not** the separate OOF probe-envelope experiment of Table II. The original Table I numerical values must be verified by comparing real exported rows from the correct frozen features; the synthetic unit tests do not establish those results. Matched CE uses the same CLI with `--mode matched_ce --method 'Matched CE re-access'`; the separate PaCo method is not implemented.
+When you supply authorized frozen-feature arrays, the CLI computes new query CSI/AP results. The arrays and original radar model checkpoints are restricted and are not included. This CLI implements the original case-disjoint, support-only calibration protocol, **not** the separate OOF probe-envelope experiment of Table II. The original Table I numerical values must be verified by comparing real exported rows from the correct frozen features; the synthetic unit tests do not establish those results. Matched CE uses the same CLI with `--mode matched_ce --method 'Matched CE re-access'`; the separate PaCo method is not implemented.
 
 ### Objective-matched cross-entropy control (Table I)
 
@@ -78,6 +78,28 @@ python scripts/run_patchshot.py \
 ```
 
 Matched CE uses the same support cases, architecture and optimizer steps as the SupCon projector, but optimizes a temporary CE classifier and **discards that classifier** before the prototype readout. Refer to [docs/MATCHED_CE_PROTOCOL.md](docs/MATCHED_CE_PROTOCOL.md). Reference results are archived from the real original experiments; full data-free numerical reproduction is not claimed.
+
+### Evidence-covered Figure 4 panels (archived data; no new model inference)
+
+Use the committed aggregate and five-seed paired-difference CSVs to produce three radar-only panels:
+
+```bash
+python scripts/plot_verified_figure4.py --out_dir figure_output
+python tools/audit_table_i_reference.py
+python tools/audit_figure4_paired_deltas.py
+```
+
+The plots intentionally contain only source-verified evidence: Frozen prototype/PatchShot across 1%, 5%, 10%, 20%, and 50% support; additional ProtoNet, SimpleShot, Balanced Linear and Matched CE at **20% only**. Other original QPE, PaCo and ERA5 budget cells are not reconstructed or imputed. The underlying Stage-27 dataset has **1,922 cases, 961 query cases, and 961 support cases at 50%**. The 959-case support figure belongs to a separate 1,918-case aligned pool. See [docs/FIGURE4_FULL_BUDGET_AUDIT.md](docs/FIGURE4_FULL_BUDGET_AUDIT.md).
+
+### OOF probing (algorithm only; Table II numbers not independently reproduced)
+
+```bash
+python scripts/run_oof_probes.py --npz /authorized/embeddings/seed0.npz \
+  --label heavy_5 --seed 0 --method "Frozen 3DMAE" \
+  --out /local/oof/frozen_h5_seed0.csv
+```
+
+This probes an already computed embedding array using case-grouped out-of-fold calibration; it does **not** recover unpublished adapted embeddings or independently reproduce Table II.
 
 ### Original structural-sensitivity scripts (Table III pathway)
 
@@ -111,6 +133,9 @@ This utility computes patch-level F1 and mean decision instability `U = 4p(1-p)`
 ## Reproducibility and access
 
 - [Protocol-by-protocol evidence and limitations](docs/PROTOCOLS.md)
+- [Source-backed Figure 4 reconstruction and scope](docs/FIGURE4_FULL_BUDGET_AUDIT.md)
+- [Table I and Matched CE source provenance](docs/MATCHED_CE_PROTOCOL.md)
+- [Post-embedding OOF probe methods (not Table II replication)](docs/OOF_PROBES.md)
 - [Per-draw CSV requirements](docs/PER_DRAW_SCHEMA.md)
 - [Checklist before claiming complete reproduction](docs/RELEASE_CHECKLIST.md)
 - [Historical baseline repository description](docs/LEGACY_README.md)

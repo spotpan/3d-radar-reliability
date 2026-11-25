@@ -3,7 +3,7 @@
 
 Faithful entrypoint for the radar-only support/query readout protocol. The
 restricted feature arrays are not distributed. This script is NOT an end-to-end
-3DMAE checkpoint inference pipeline and does not run Matched CE or PaCo.
+3DMAE checkpoint inference pipeline. Matched CE is available via --mode\nmatched_ce, whereas PaCo-Proto is not yet implemented.
 """
 from __future__ import annotations
 import argparse
