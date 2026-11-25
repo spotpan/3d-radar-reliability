@@ -1,5 +1,6 @@
 """Method sanity tests only — not Table II result reproduction."""
 import unittest
+import importlib.util
 import numpy as np
 from patchshot.oof_probes import best_csi_threshold, query_csi, evaluate_accessibility, evaluate_oof_probe
 
@@ -16,6 +17,7 @@ class OOFProbeTest(unittest.TestCase):
         self.assertEqual(t,.8)
         self.assertEqual(query_csi(np.array([1,0,0,1]),
                                    np.array([.9,.3,.6,.8]),t),1.)
+    @unittest.skipUnless(importlib.util.find_spec('torch'), 'Torch unavailable in lightweight CI')
     def test_three_probes(self):
         rows,summary = evaluate_accessibility(self.sx,self.sy,self.qx,self.qy,seed=0,folds=4)
         self.assertEqual(len(rows),3)
