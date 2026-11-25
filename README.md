@@ -17,7 +17,7 @@ These are **separate experiments**, not three measurements from one common train
 
 | Evidence in manuscript | Evaluation setting | Public repository status |
 | --- | --- | --- |
-| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **PatchShot core CLI integrated**, including frozen and PCA baselines; Matched CE/PaCo, Table II probe envelope, original exact feature arrays and full per-seed numeric verification still pending |
+| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **PatchShot core CLI integrated**, including frozen and PCA baselines; Matched CE objective-matched projector and original five-seed results integrated; PaCo, Table II probe envelope, original frozen-feature arrays and fresh numerical rerun remain pending |
 | **Table III; original analyses in Figure 2** | Frozen 3DMAEPP with lower-threshold QPE-derived patch-event decisions | **Code available:** existing perturbation evaluation scripts; full numeric reproduction still needs authorized data, checkpoint and audit |
 | **Table IV; H5/H10 analyses in Figure 2** | Separate frozen M3_natural experiment and 2023 event split | **Pending integration:** dedicated high-intensity evaluation protocol, model outputs and test-split manifests |
 | **Figures 3, 5–6** | Unperturbed PatchShot decisions with aligned radar, precipitation reference and DEM | **Pending integration:** full spatial/terrain mismatch and calendar-day bootstrap pipeline |
@@ -33,7 +33,7 @@ These are **separate experiments**, not three measurements from one common train
 ├── models/                        # 3DMAE encoder and QPE components
 ├── training/                      # Base-model training components
 ├── evaluation/                    # Existing QPE and structural diagnostics
-├── patchshot/                     # Frozen-feature supervised PatchShot readout
+├── patchshot/                     # Frozen-feature PatchShot and matched CE readouts
 ├── scripts/run_patchshot.py       # Case-disjoint PatchShot benchmark CLI
 ├── scripts/                       # Existing training utilities
 ├── tools/audit_instability.py     # Post-inference vote/instability consistency audit
@@ -43,7 +43,7 @@ These are **separate experiments**, not three measurements from one common train
 └── README.md
 ```
 
-See [docs/PATCHSHOT_PROTOCOL.md](docs/PATCHSHOT_PROTOCOL.md) for the imported Stage-27 protocol and its limitations.
+See [docs/PATCHSHOT_PROTOCOL.md](docs/PATCHSHOT_PROTOCOL.md) for Stage-27 and [docs/MATCHED_CE_PROTOCOL.md](docs/MATCHED_CE_PROTOCOL.md) for the original objective-matched CE control and its archived five-seed results.
 
 The earlier project description is preserved in [docs/LEGACY_README.md](docs/LEGACY_README.md). Older generic QPE evaluation examples are documented separately in [evaluation/README.md](evaluation/README.md); they must not be treated as the current TGRS Tables I–II.
 
@@ -65,7 +65,19 @@ python scripts/run_patchshot.py \
   --labels heavy_5,heavy_10 --ratios 0.20 --seeds 5 --device cuda
 ```
 
-The CSV exports are **new computation results from the user's supplied frozen-feature arrays**. The arrays and original radar model checkpoints are restricted and are not included. This CLI implements the original case-disjoint, support-only calibration protocol, **not** the separate OOF probe-envelope experiment of Table II. The original Table I numerical values must be verified by comparing real exported rows from the correct frozen features; the synthetic unit tests do not establish those results. PaCo and Matched CE are not implemented by this core CLI.
+The CSV exports are **new computation results from the user's supplied frozen-feature arrays**. The arrays and original radar model checkpoints are restricted and are not included. This CLI implements the original case-disjoint, support-only calibration protocol, **not** the separate OOF probe-envelope experiment of Table II. The original Table I numerical values must be verified by comparing real exported rows from the correct frozen features; the synthetic unit tests do not establish those results. Matched CE uses the same CLI with `--mode matched_ce --method 'Matched CE re-access'`; the separate PaCo method is not implemented.
+
+### Objective-matched cross-entropy control (Table I)
+
+```bash
+python scripts/run_patchshot.py \
+  --npz /authorized/path/to/val_event_patch_features_raw_mae.npz \
+  --mode matched_ce --method "Matched CE re-access" \
+  --ratios 0.20 --seeds 5 --device cuda \
+  --out_dir /local/matched_ce_output
+```
+
+Matched CE uses the same support cases, architecture and optimizer steps as the SupCon projector, but optimizes a temporary CE classifier and **discards that classifier** before the prototype readout. Refer to [docs/MATCHED_CE_PROTOCOL.md](docs/MATCHED_CE_PROTOCOL.md). Reference results are archived from the real original experiments; full data-free numerical reproduction is not claimed.
 
 ### Original structural-sensitivity scripts (Table III pathway)
 
