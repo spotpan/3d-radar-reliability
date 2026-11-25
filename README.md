@@ -11,13 +11,13 @@ This repository studies reliability **beyond aggregate quantitative precipitatio
 
 These are **separate experiments**, not three measurements from one common trained model. Their backbones, splits, event definitions, and analysis units must not be conflated.
 
-> **Release status (November 2026): partial research code.** The publicly available repository currently includes the 3DMAEPP base-model code, original structural-perturbation scripts, and lightweight diagnostic audit utilities. It does **not yet** provide fully validated, end-to-end reproduction of every reported table and figure. A separate PatchShot code package has been identified but is **not yet integrated into this repository**. No missing implementation or data is represented as publicly available.
+> **Release status (November 2026): partial research code.** The publicly available repository currently includes the 3DMAEPP base-model code, original structural-perturbation scripts, and lightweight diagnostic audit utilities. It does **not yet** provide fully validated, end-to-end reproduction of every reported table and figure. The **radar-only PatchShot core** (frozen-feature loading, case-disjoint support/query splits, support-supervised projection, prototype calibration and a runnable CLI) has been integrated from the archived clean release. Matched CE, PaCo-Proto, Table II envelope, M3_natural and terrain analysis still lack verified complete public runners. No missing implementation or data is represented as publicly available.
 
 ## Paper-to-code map
 
 | Evidence in manuscript | Evaluation setting | Public repository status |
 | --- | --- | --- |
-| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **Pending integration** of verified PatchShot/related code, exact splits, per-seed records and calibration |
+| **Tables I–II, Figure 4** | Frozen 3DMAE readouts (PatchShot, prototypes, matched supervised controls, empirical envelope) | **PatchShot core CLI integrated**, including frozen and PCA baselines; Matched CE/PaCo, Table II probe envelope, original exact feature arrays and full per-seed numeric verification still pending |
 | **Table III; original analyses in Figure 2** | Frozen 3DMAEPP with lower-threshold QPE-derived patch-event decisions | **Code available:** existing perturbation evaluation scripts; full numeric reproduction still needs authorized data, checkpoint and audit |
 | **Table IV; H5/H10 analyses in Figure 2** | Separate frozen M3_natural experiment and 2023 event split | **Pending integration:** dedicated high-intensity evaluation protocol, model outputs and test-split manifests |
 | **Figures 3, 5–6** | Unperturbed PatchShot decisions with aligned radar, precipitation reference and DEM | **Pending integration:** full spatial/terrain mismatch and calendar-day bootstrap pipeline |
@@ -33,6 +33,8 @@ These are **separate experiments**, not three measurements from one common train
 ├── models/                        # 3DMAE encoder and QPE components
 ├── training/                      # Base-model training components
 ├── evaluation/                    # Existing QPE and structural diagnostics
+├── patchshot/                     # Frozen-feature supervised PatchShot readout
+├── scripts/run_patchshot.py       # Case-disjoint PatchShot benchmark CLI
 ├── scripts/                       # Existing training utilities
 ├── tools/audit_instability.py     # Post-inference vote/instability consistency audit
 ├── tests/                         # Unit tests for audit utilities
@@ -40,6 +42,8 @@ These are **separate experiments**, not three measurements from one common train
 ├── requirements.txt
 └── README.md
 ```
+
+See [docs/PATCHSHOT_PROTOCOL.md](docs/PATCHSHOT_PROTOCOL.md) for the imported Stage-27 protocol and its limitations.
 
 The earlier project description is preserved in [docs/LEGACY_README.md](docs/LEGACY_README.md). Older generic QPE evaluation examples are documented separately in [evaluation/README.md](evaluation/README.md); they must not be treated as the current TGRS Tables I–II.
 
@@ -51,6 +55,17 @@ cd 3d-radar-reliability
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
+
+### Radar-only PatchShot core (Table I pathway)
+
+```bash
+python scripts/run_patchshot.py \
+  --npz /authorized/path/to/val_event_patch_features_raw_mae.npz \
+  --out_dir /local/patchshot_output \
+  --labels heavy_5,heavy_10 --ratios 0.20 --seeds 5 --device cuda
+```
+
+The CSV exports are **new computation results from the user's supplied frozen-feature arrays**. The arrays and original radar model checkpoints are restricted and are not included. This CLI implements the original case-disjoint, support-only calibration protocol, **not** the separate OOF probe-envelope experiment of Table II. The original Table I numerical values must be verified by comparing real exported rows from the correct frozen features; the synthetic unit tests do not establish those results. PaCo and Matched CE are not implemented by this core CLI.
 
 ### Original structural-sensitivity scripts (Table III pathway)
 
