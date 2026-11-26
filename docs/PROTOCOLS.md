@@ -1,40 +1,61 @@
-# Protocol and script audit (TGRS draft; updated 2026-11-25)
+# Experimental protocol boundaries
 
-This file maps manuscript evidence to the *present repository*; no publication-grade reproduction has been verified from a fresh clone with the actual restricted data.
+This document describes implementation contracts and distinguishes
+different research questions. It intentionally contains **no published
+performance numbers or experimental result exports**.
 
-## Representation accessibility: Tables I and II, Figure 4
+## Frozen radar representation readout
 
-- Frozen 3DMAE representation pathway; does NOT use the original full 3DMAEPP Temporal Transformer and QPE decoder as the PatchShot readout.
-- Radar-only Table I at 20% support: 384 support and 961 query cases per seed; five paired seeds; H5/H10 threshold-specific labels and support-only calibration.
-- The Stage-27 radar-only dataset has 1,922 cases, 961 query cases and support budgets 19, 96, 192, 384 and **961**. A separate ERA5-aligned Stage-112a subset uses 1,918 cases, 959 queries and 959 support cases at 50%; do not confuse the two.
-- Figure 4 radar-only Frozen/PatchShot five-budget summary and true seed-paired deltas can now be plotted from archived source records using scripts/plot_verified_figure4.py; other baseline methods have confirmed 20%-only data.
-- Already released: PatchShot and objective-matched CE readout algorithms, case-disjoint splits, support-only threshold calibration, recorded five-seed CSI references, a post-embedding OOF probe tool and source-covered Figure 4 plots.
-- Still missing for complete reproducibility: exact case manifests with temporal provenance, authorized pretrained features/checkpoints, actual query predictions, PaCo implementation, fully verified Table II adapted embeddings and OOF reference outputs, and additional Figure 4 protocols.
-- Legacy run_evaluation.py and evaluation/README.md are *generic QPE examples*, not evidence of reproduced manuscript Tables I/II.
+The PatchShot pathway freezes a 3D radar encoder and evaluates lightweight
+support-supervised readouts on patch-level embeddings. Support and query cases
+are disjoint. Support labels may train a projection head, define prototypes,
+and calibrate the decision threshold; query labels are used only in evaluation.
 
-## Original structural sensitivity: Table III
+The matched CE control changes the projection training objective while
+retaining the support-derived prototype readout. Do not confuse this control
+with a direct balanced-CE classification head.
 
-- Frozen 3DMAEPP QPE predictor, thresholded low-rainfall patch events (reference threshold 0.1 mm/h), 50 validation cases, 16 draws per perturbation mode.
-- Existing family script evaluation/compare_physical_rs_uncertainty.py defaults to 16 draws / 50 batches, with Gaussian std .03, scaling std .10, vertical and frame dropout probability .15, four 64x64 blocks; its default checkpoint must be checked locally.
-- Existing targeted-level script evaluation/compare_height_layer_rs_uncertainty.py defaults to only 8 draws / 20 batches: override both to 16 / 50 and set drop probability .5.
-- Targeted group code sets all selected levels to zero *together* when a Bernoulli(.5) gate fires. This is not independent per-level dropout. The published mean U group values are 0.0938 / 0.0151 / 0.0176; their mean is 0.0421667 and the defined max/mean ratio is about 2.22.
-- Existing code computes score std using distinct conventions across scripts (Torch std vs NumPy std). Verify actual experiment provenance before matching the manuscript's Mean Std. column.
-- The data loader, source checkpoint SHA, split, and output CSV must be audited to establish a numerical match.
+These case-level splits do not by themselves establish time-block- or
+storm-level independence. The exact source split and input provenance are
+the responsibility of each experimental reproduction.
 
-## Separate heavy/extreme structural sensitivity: Table IV
+## Empirical accessibility probes
 
-- Frozen M3_natural, independent 2023 test split, 48 radar scenes and 7,920 evaluated patches, 16 draws, fixed validation-calibrated H5/H10 decisions.
-- This is NOT the Table III model or sample population. The source construction of 7,920 patches from 48 scenes is not yet provided in this repository.
-- Preserve a separate event-score transform and calibration; do not reuse Table III's 0.0005 QPE-score threshold.
-- The current repository does not provide a verified standalone M3_natural Table IV runner.
+The standalone probe code evaluates prototype, linear and k-NN readouts
+using case-grouped, out-of-fold support threshold selection. This differs
+from PatchShot's regular support-only calibration. The evaluated maximum
+across a specified probe family is an empirical envelope, not a theoretical
+bound. The repository does not ship adapted embeddings or the records
+underlying manuscript tables.
 
-## Terrain-associated mismatch: Figures 3, 5 and 6
+## Structural sensitivity
 
-- PatchShot event decisions remain fixed on 6x8 parent grid.
-- 12x16, 24x32, 48x64 subdivisions describe finer observational analysis only, not new model predictions.
-- Requires registered radar/ref-rain/DEM observations, parent outcomes, landform labels, FP/TN and FN/TP controls, day-cluster bootstrap, and source predictions.
-- The current repository does not yet provide the complete terrain-statistics runner.
+The `evaluation/` utilities operate on a separate 3DMAEPP retrieval
+pathway with user-provided checkpoints and radar observations. Their
+perturbation modes, score transforms, sample selection and thresholds must
+be recorded by the experimenter; results cannot be directly combined with
+the frozen-representation readout experiment.
 
-## Scope of available reproducibility
+The targeted height-group dropout utility applies a *joint gate* to its
+selected group, not independent gates for each height level.
 
-Public source availability is not equivalent to independently validated numerical reproduction. Keep all restricted data and checkpoints out of version control, document actual provenance, and retain the original evaluation scripts for historical continuity.
+## Heavy/extreme event sensitivity
+
+An additional high-intensity predictor, if evaluated, must retain its own
+model checkpoint, event construction, validation-frozen thresholds and
+data split. It must not silently inherit the original structural
+diagnostic's score threshold.
+
+## Terrain-associated mismatch
+
+Terrain analysis should preserve the fixed prediction decision grid
+while allowing finer observational subdivisions for radar, rainfall
+reference and DEM diagnostics. That process requires registered
+observations and appropriately grouped uncertainty estimates.
+No full terrain analysis runner or underlying observations are shipped.
+
+## Publication boundary
+
+The public repository contains implementation and synthetic unit tests,
+not original research data, model weights or manuscript result files.
+Users can run the methods on data they are authorized to use.

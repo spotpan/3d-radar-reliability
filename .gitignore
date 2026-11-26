@@ -12,9 +12,11 @@ env/
 venv/
 *.tar.gz
 
-# Data
+# Original data, generated predictions and scores
 data_raw/
 data_processed/
+reference_results/
+figure_output/
 *.h5
 *.hdf5
 *.nc

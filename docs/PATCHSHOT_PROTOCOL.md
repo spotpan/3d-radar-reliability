@@ -1,60 +1,49 @@
-# PatchShot radar-only reproduction pathway
+# PatchShot: support-supervised re-access to frozen radar features
 
-Source: `PatchShot_OpenReview_Code(1).zip`, extracted clean implementation.
-The `patchshot/data.py` and `patchshot/model.py` code and the
-metric/readout/evaluation routines here preserve the published Stage-27
-methodology. The CLI was compacted for this repository; results must be
-checked against actual Stage-27 per-seed CSVs and the original feature arrays.
+The goal is to test whether a frozen radar representation contains
+heavy-rain event evidence that a direct prototype or original retrieval
+head does not reliably expose.
 
-## What is runnable
+## Inputs and split
+
+- Frozen, case-organized patch embeddings `z_patch` shaped
+  `[cases, patches, feature_dim]`.
+- Patch-level binary event labels shaped `[cases, patches]`.
+- A **case-disjoint** query set and a support pool. Nested support budgets
+  are drawn only from the support pool.
+- All training, prototype construction and threshold calibration use
+  support examples only.
+
+Case-disjoint does not imply temporally or storm-disjoint. Users should
+apply appropriate temporal controls when drawing new conclusions.
+
+## Algorithm
+
+1. Keep the radar encoder frozen.
+2. Train a small `Linear → GELU → Linear` projection on support patches
+   with a supervised contrastive objective and balanced batches.
+3. Normalize the projected embeddings and compute positive/negative
+   support prototypes.
+4. Calibrate a score threshold by optimizing support CSI, with F1
+   tie-breaking.
+5. Evaluate on held-out query patches using the unchanged calibration.
+
+The `frozen` and `pca` modes in
+`scripts/run_patchshot.py` provide lightweight readout comparisons.
+See `patchshot/model.py`, `readout.py` and `evaluation.py` for
+configuration defaults and formulas.
+
+## Run on your own authorized features
 
 ```bash
 python scripts/run_patchshot.py \
-    --npz /authorized/path/to/val_event_patch_features_raw_mae.npz \
-    --out_dir /local/patchshot_20pct \
-    --labels heavy_5,heavy_10 \
-    --ratios 0.20 --seeds 5 --device cuda
+  --npz /path/to/local_frozen_patch_features.npz \
+  --mode supcon --device cuda \
+  --out_dir /path/to/local_output
 ```
 
-Inputs must contain `z_patch` of shape `[1922,48,768]` and patch
-labels `heavy_5`, `heavy_10` of shape `[1922,48]`; alternatively
-`target_max` can be used to construct patch labels. Actual arrays,
-checkpoint and station/radar inputs are not redistributed.
-
-For each seed: one 50% query set (961 cases), 20% support (384 cases),
-nested support subsets from a fixed support pool. Support and query
-**cases** do not overlap; this does not establish time-block or
-storm-disjoint independence. Patch-level CSI and AP are computed
-from the query patches (not case-level or pixel-level metrics).
-
-Canonical SupCon settings: frozen 768-D inputs; 768->256->128
-projection with GELU, L2 normalization, balanced patch batches,
-20 epochs, 60 steps/epoch, batch 512, AdamW at 1e-3,
-weight decay 1e-4, temperature 0.1. Two support-derived
-prototypes; support-only threshold search over 500 candidates,
-with a CSI objective and F1 tie-break. Query labels are never
-used for training, prototype creation or threshold calibration.
-This is *in-sample support calibration*, not an OOF-calibrated
-protocol. Table II's separate empirical probe-envelope analysis
-must not be conflated with these Table I outputs.
-
-## Coverage and limitations
-
-The present import covers PatchShot and frozen/PCA prototype
-comparisons. It **does not** yet include complete audited
-implementations of Matched CE, PaCo-Proto, Table II probe
-envelopes, ERA5 routing or terrain statistics. The legacy
-OpenReview scripts contain local absolute paths and were
-not copied wholesale. The 1922-case radar-only and 1918-case
-ERA5-aligned experiments are not strictly matched populations.
-
-Published Table I 20% support cross-check values (CSI, percentages):
-Frozen prototype H5=16.02/H10=11.91; PatchShot
-H5=23.29/H10=16.65. These are reference findings, not outputs
-generated during the repository import. Five-seed standard
-deviations should follow the manuscript's population or sample
-convention consistently.
-
-Use `python -m unittest discover -s tests -v` for elementary
-code checks; those checks use synthetic *unit-test fixtures*,
-not actual experimental cases.
+Output CSVs are created **locally** by the user and are not stored in
+this repository. The supplied package does not include upstream
+radar observations, reference precipitation, extracted features or
+model checkpoints. This method implementation alone is not a
+complete reproduction of the manuscript.
