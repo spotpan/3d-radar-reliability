@@ -1,35 +1,34 @@
-# OOF probe implementation, not Table II numerical reproduction
+# Case-grouped out-of-fold readout probes
 
-This repository includes an independent post-embedding implementation
-of Stage-116a's **case-grouped out-of-fold** support calibration.
+This module describes **how to compute** a support-calibrated empirical
+readout envelope from already available representations. It does not
+contain manuscript numerical results.
 
-Three readouts are evaluated: Prototype, balanced linear, and k-NN.
-Each is trained on support folds; its predictions on held-out support
-cases are used to calibrate a CSI-maximizing threshold. The full
-support set then trains each query readout; query labels are **not**
-used to select thresholds. The envelope is the per-seed maximum of
-the three evaluated CSI values and is not an information-theoretic
-bound. Ratios and gaps are computed from these evaluated values.
+The implemented probe families are:
+- positive/negative prototype score
+- balanced linear classification score
+- k-nearest-neighbor score
+
+Each probe fits on training support *cases*, predicts held-out support
+cases, and uses those out-of-fold scores to select an event threshold.
+The probe then fits on all support cases and predicts the fixed query
+set with that support-derived threshold.
+
+An empirical envelope is the maximum evaluated query CSI across these
+specific probes for an experiment. It is **not an information-theoretic
+bound** and should not be compared to an experiment using a different
+split, representation, label, or calibration family without qualification.
+
+## Method-only entrypoint
 
 ```bash
 python scripts/run_oof_probes.py \
-  --npz /authorized/embeddings/seed0_matched_ce.npz \
-  --label heavy_5 --seed 0 --method "Matched CE" \
-  --out /local/oof/matched_ce_h5_seed0.csv
+  --npz /path/to/your_embeddings.npz \
+  --label heavy_5 --seed 0 --method "Frozen embedding" \
+  --out /path/to/local_oof_scores.csv
 ```
 
-**Scientific limitation:** the original Stage-116a code's default
-representations are frozen radar plus several environment-conditioned
-variants from the aligned 1,918-case benchmark. The current TGRS
-Table II instead reports Frozen 3DMAE, radar-only Matched CE and
-radar-only PatchShot, but this archive has **no confirmed complete
-per-seed OOF probe CSVs and adapted embedding stores** for all six
-Table II method/event rows.
-
-The CLI above uses the current 1,922-case Stage-27 split
-(seeds 0–4), *not* the historical Stage-116a aligned seed/split
-protocol. It cannot be claimed equivalent to the published Table II
-without tracing the exact original adapted embeddings and seed maps
-and rerunning those probes on verified inputs. A check of basic
-algorithm behavior using synthetic test fixtures is not a
-scientific replication of Table II.
+Any output is written only to a local user-specified path. The public
+repository does not provide the underlying adapted embeddings,
+real experiments' splits or individual query predictions. The
+unit tests use synthetic examples to check algorithm behavior.
